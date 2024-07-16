@@ -26,6 +26,8 @@ It turns out that there are a few ways to do this, mostly involving the `openssl
 
 "One Shell To Rule Them All", or `oneshell` for short, is a tool that can solve this problem. It does this by running an encrypted reverse shell using only the `echo` and `chmod` commands.
 
+To find out how it works, check out my blog on the topic [here](https://tantosec.com/blog/oneshell/).
+
 # Detailed requirements for a successful payload
 
 * Target can connect to your via TCP
