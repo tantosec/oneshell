@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"log"
+	"net"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/tantosec/oneshell/pkg"
+	"golang.org/x/crypto/ssh"
 )
 
 var rootCmd = &cobra.Command{
@@ -21,17 +23,31 @@ additional code allowing the program to download a Golang binary containing the 
 			log.Fatal(err)
 		}
 
+		sshHost, err := cmd.Flags().GetString("ssh")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		target, err := cmd.Flags().GetString("target")
 		if err != nil {
 			log.Fatal(err)
 		}
 
+		var sshConn *ssh.Client = nil
+
+		dialer := net.Dial
+
+		if sshHost != "" {
+			sshConn = pkg.ConnectToSSHHost(sshHost)
+			dialer = sshConn.Dial
+		}
+
 		if target == "" {
-			target, err = pkg.GetMyIP()
+			target, err = pkg.GetIPUsingDialer(dialer)
 			if err != nil {
-				log.Fatalf("failed to automatically detect public ip: %v", err)
+				log.Fatalf("failed to automatically detect IP: %v", err)
 			}
-			log.Println("Target unspecified, using public IP")
+			log.Println("Target unspecified, using public IP:", target)
 		}
 
 		err = pkg.Listen(target, port)
@@ -50,5 +66,6 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringP("target", "t", "", "Target IP/hostname for the victim to connect to (this machine). If left blank, will try and identify public IP automatically")
-	rootCmd.Flags().Uint16P("port", "p", 443, "Port to listen on")
+	rootCmd.Flags().Uint16P("port", "p", 9001, "Port to listen on")
+	rootCmd.Flags().StringP("ssh", "s", "", "Name of SSH config file entry. If specified will listen on <port> on the remote machine instead of the local port")
 }
