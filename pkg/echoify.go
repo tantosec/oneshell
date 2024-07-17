@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var PRINTABLE = []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&()*+,-./:;<=>?@[]^_`{|}~ ")
+var PRINTABLE = []byte("0123456789abcdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&()*+,-./:;<=>?@[]^_`{|}~")
 var NUMERIC = []byte("0123456789")
 
 func EchoifyData(data []byte) string {
