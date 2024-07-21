@@ -71,7 +71,7 @@ To find out how it works, check out my blog on the topic [here](https://tantosec
 
 # Detailed requirements for a successful payload
 
-* Target can connect to your via TCP
+* Target can connect to your listener via TCP
 * Shell execution on the target (for example `system` in PHP)
     * This will allow using the `echo` inbuilt shell command
 * x86_64 CPU (Arm64 support coming soon)
