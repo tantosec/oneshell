@@ -20,6 +20,10 @@ docker run --rm -it -p 9001:9001 tantosec/oneshell
 go install github.com/tantosec/oneshell@latest
 ```
 
+**Prebuilt binary**
+
+Download a binary from [the releases page.](https://github.com/tantosec/oneshell/releases)
+
 # Basic Usage
 
 If you want your payload to connect back to `localhost` on port `9001`, run the following command:
