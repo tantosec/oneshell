@@ -14,7 +14,7 @@ import (
 
 var knownIdentityFiles []string = []string{"id_rsa", "id_ecdsa", "id_ecdsa_sk", "id_ed25519", "id_ed25519_sk", "id_dsa"}
 
-func ConnectToSSHHost(host string, testPort uint16, bypassSanityCheck bool) (*ssh.Client, error) {
+func ConnectToSSHHost(host string, listenAddress string, testPort uint16, bypassSanityCheck bool) (*ssh.Client, error) {
 	homeDir, err := homedir.Dir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home directory: %v", err)
@@ -125,7 +125,7 @@ func ConnectToSSHHost(host string, testPort uint16, bypassSanityCheck bool) (*ss
 	}
 
 	if !bypassSanityCheck {
-		err = testListenAllInterfaces(client, hostname, testPort)
+		err = testListenAllInterfaces(client, hostname, listenAddress, testPort)
 		if err != nil {
 			return nil, err
 		}
@@ -134,10 +134,10 @@ func ConnectToSSHHost(host string, testPort uint16, bypassSanityCheck bool) (*ss
 	return client, nil
 }
 
-func testListenAllInterfaces(client *ssh.Client, hostname string, testPort uint16) error {
+func testListenAllInterfaces(client *ssh.Client, hostname string, listenAddress string, testPort uint16) error {
 	log.Println("Testing connection to SSH server to ensure SSH port forward works...")
 
-	l, err := client.Listen("tcp", fmt.Sprintf(":%v", testPort))
+	l, err := client.Listen("tcp", fmt.Sprintf("%v:%v", listenAddress, testPort))
 	if err != nil {
 		return fmt.Errorf("failed to start test listener: %v", err)
 	}

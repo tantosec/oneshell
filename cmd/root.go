@@ -38,12 +38,17 @@ additional code allowing the program to download a Golang binary containing the 
 			log.Fatal(err)
 		}
 
+		listenAddress, err := cmd.Flags().GetString("listen-address")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		var sshConn *ssh.Client = nil
 
 		dialer := net.Dial
 
 		if sshHost != "" {
-			sshConn, err = pkg.ConnectToSSHHost(sshHost, port, bypassSanityCheck)
+			sshConn, err = pkg.ConnectToSSHHost(sshHost, listenAddress, port, bypassSanityCheck)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -59,8 +64,9 @@ additional code allowing the program to download a Golang binary containing the 
 		}
 
 		listener := pkg.Listener{
-			Listen: net.Listen,
-			Port:   port,
+			Listen:  net.Listen,
+			Address: listenAddress,
+			Port:    port,
 		}
 
 		if sshConn != nil {
@@ -82,7 +88,8 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringP("target", "t", "", "Target IP/hostname for the victim to connect to (this machine). If left blank, will try and identify public IP automatically")
+	rootCmd.Flags().StringP("target", "t", "", "Target IP/hostname for the victim to connect back to. If left blank, will try and identify automatically. Usually the public IP of the listening machine.")
+	rootCmd.Flags().StringP("listen-address", "l", "0.0.0.0", "IP address to listen on")
 	rootCmd.Flags().Uint16P("port", "p", 9001, "Port to listen on")
 	rootCmd.Flags().StringP("ssh", "s", "", "Name of SSH config file entry. If specified will listen on <port> on the remote machine instead of the local port")
 	rootCmd.Flags().Bool("bypass-ssh-sanity-check", false, "Bypass the test connection to the SSH machine to check if the SSH port forward works")

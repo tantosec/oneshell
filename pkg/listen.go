@@ -15,8 +15,9 @@ import (
 )
 
 type Listener struct {
-	Listen func(n string, addr string) (net.Listener, error)
-	Port   uint16
+	Listen  func(n string, addr string) (net.Listener, error)
+	Address string
+	Port    uint16
 }
 
 func resolveIP(target string) (net.IP, error) {
@@ -83,7 +84,7 @@ func Listen(listener Listener, target string) error {
 }
 
 func listenTcp(listener Listener) (net.Listener, error) {
-	l, err := listener.Listen("tcp", fmt.Sprintf(":%v", listener.Port))
+	l, err := listener.Listen("tcp", fmt.Sprintf("%v:%v", listener.Address, listener.Port))
 	if err != nil {
 		return nil, fmt.Errorf("listen: failed to listen on port %v: %v", listener.Port, err)
 	}
