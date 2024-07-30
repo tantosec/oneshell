@@ -154,7 +154,7 @@ func testListenAllInterfaces(client *ssh.Client, hostname string, listenAddress 
 	c, err := net.Dial("tcp", fmt.Sprintf("%v:%v", hostname, testPort))
 	if err != nil {
 		fmt.Println()
-		fmt.Println("During a test connection to the SSH instance, it was found that the desired port was unreachable. The most likely fix for this is adding the following line to /etc/ssh/sshd_config:")
+		fmt.Println("During a test connection to the SSH instance, it was found that the desired port was unreachable. This could mean that sshd does not allow listening on all interfaces. To fix this, add the following line to /etc/ssh/sshd_config on the remote:")
 		fmt.Println()
 		fmt.Println("GatewayPorts clientspecified")
 		fmt.Println()
