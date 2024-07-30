@@ -83,12 +83,12 @@ func Listen(listener Listener, target string) error {
 }
 
 func listenTcp(listener Listener) (net.Listener, error) {
-	l, err := listener.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", listener.Port))
+	l, err := listener.Listen("tcp", fmt.Sprintf(":%v", listener.Port))
 	if err != nil {
 		return nil, fmt.Errorf("listen: failed to listen on port %v: %v", listener.Port, err)
 	}
 
-	log.Printf("Listening for connections on 0.0.0.0:%v\n", listener.Port)
+	log.Printf("Listening for connections on :%v\n", listener.Port)
 
 	return l, nil
 }

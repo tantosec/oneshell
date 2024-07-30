@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ import (
 
 var knownIdentityFiles []string = []string{"id_rsa", "id_ecdsa", "id_ecdsa_sk", "id_ed25519", "id_ed25519_sk", "id_dsa"}
 
-func ConnectToSSHHost(host string) (*ssh.Client, error) {
+func ConnectToSSHHost(host string, testPort uint16, bypassSanityCheck bool) (*ssh.Client, error) {
 	homeDir, err := homedir.Dir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user home directory: %v", err)
@@ -123,5 +124,51 @@ func ConnectToSSHHost(host string) (*ssh.Client, error) {
 		return nil, fmt.Errorf("failed to connect to SSH server: %v", err)
 	}
 
+	if !bypassSanityCheck {
+		err = testListenAllInterfaces(client, hostname, testPort)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return client, nil
+}
+
+func testListenAllInterfaces(client *ssh.Client, hostname string, testPort uint16) error {
+	log.Println("Testing connection to SSH server to ensure SSH port forward works...")
+
+	l, err := client.Listen("tcp", fmt.Sprintf(":%v", testPort))
+	if err != nil {
+		return fmt.Errorf("failed to start test listener: %v", err)
+	}
+
+	defer l.Close()
+
+	go func() {
+		c, err := l.Accept()
+		if err == nil {
+			c.Close()
+		}
+	}()
+
+	c, err := net.Dial("tcp", fmt.Sprintf("%v:%v", hostname, testPort))
+	if err != nil {
+		fmt.Println()
+		fmt.Println("During a test connection to the SSH instance, it was found that the desired port was unreachable. The most likely fix for this is adding the following line to /etc/ssh/sshd_config:")
+		fmt.Println()
+		fmt.Println("GatewayPorts clientspecified")
+		fmt.Println()
+		fmt.Println("This allows oneshell to listen on public interfaces on the remote machine.")
+		fmt.Println("If you know what you're doing and want to continue anyway, bypass this sanity check with --bypass-ssh-sanity-check")
+		fmt.Println()
+
+		return fmt.Errorf("failed to connect to ssh server: %v", err)
+	}
+
+	err = c.Close()
+	if err != nil {
+		return fmt.Errorf("error closing temporary connection: %v", err)
+	}
+
+	return nil
 }
