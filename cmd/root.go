@@ -38,7 +38,10 @@ additional code allowing the program to download a Golang binary containing the 
 		dialer := net.Dial
 
 		if sshHost != "" {
-			sshConn = pkg.ConnectToSSHHost(sshHost)
+			sshConn, err = pkg.ConnectToSSHHost(sshHost)
+			if err != nil {
+				log.Fatal(err)
+			}
 			dialer = sshConn.Dial
 		}
 
@@ -50,7 +53,16 @@ additional code allowing the program to download a Golang binary containing the 
 			log.Println("Target unspecified, using public IP:", target)
 		}
 
-		err = pkg.Listen(target, port)
+		listener := pkg.Listener{
+			Listen: net.Listen,
+			Port:   port,
+		}
+
+		if sshConn != nil {
+			listener.Listen = sshConn.Listen
+		}
+
+		err = pkg.Listen(listener, target)
 		if err != nil {
 			log.Fatalf("error occurred when listening: %v", err)
 		}
