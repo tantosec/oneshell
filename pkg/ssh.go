@@ -6,13 +6,33 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/kevinburke/ssh_config"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/term"
 )
 
 var knownIdentityFiles []string = []string{"id_rsa", "id_ecdsa", "id_ecdsa_sk", "id_ed25519", "id_ed25519_sk", "id_dsa"}
+
+func parseKey(privKey []byte) (ssh.Signer, error) {
+	signer, err := ssh.ParsePrivateKey(privKey)
+	if _, ok := err.(*ssh.PassphraseMissingError); ok {
+		fmt.Print("The SSH key is password protected. Please enter the password: ")
+
+		passwd, err := term.ReadPassword(int(syscall.Stdin))
+
+		fmt.Println()
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to read password from stdin: %v", err)
+		}
+
+		return ssh.ParsePrivateKeyWithPassphrase(privKey, passwd)
+	}
+	return signer, err
+}
 
 func ConnectToSSHHost(host string, listenAddress string, testPort uint16, bypassSanityCheck bool) (*ssh.Client, error) {
 	homeDir, err := homedir.Dir()
@@ -106,7 +126,7 @@ func ConnectToSSHHost(host string, listenAddress string, testPort uint16, bypass
 		return nil, fmt.Errorf("failed to read private key: %v", err)
 	}
 
-	signer, err := ssh.ParsePrivateKey(privKey)
+	signer, err := parseKey(privKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse private key: %v", err)
 	}
