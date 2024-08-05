@@ -1,16 +1,20 @@
 package pkg
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/kevinburke/ssh_config"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"golang.org/x/term"
 )
 
@@ -32,6 +36,95 @@ func parseKey(privKey []byte) (ssh.Signer, error) {
 		return ssh.ParsePrivateKeyWithPassphrase(privKey, passwd)
 	}
 	return signer, err
+}
+
+func testListenAllInterfaces(client *ssh.Client, hostname string, listenAddress string, testPort uint16) error {
+	log.Println("Testing connection to SSH server to ensure SSH port forward works...")
+
+	l, err := client.Listen("tcp", fmt.Sprintf("%v:%v", listenAddress, testPort))
+	if err != nil {
+		return fmt.Errorf("failed to start test listener: %v", err)
+	}
+
+	defer l.Close()
+
+	go func() {
+		c, err := l.Accept()
+		if err == nil {
+			c.Close()
+		}
+	}()
+
+	c, err := net.Dial("tcp", fmt.Sprintf("%v:%v", hostname, testPort))
+	if err != nil {
+		fmt.Println()
+		fmt.Println("During a test connection to the SSH instance, it was found that the desired port was unreachable. This could mean that sshd does not allow listening on all interfaces. To fix this, add the following line to /etc/ssh/sshd_config on the remote:")
+		fmt.Println()
+		fmt.Println("GatewayPorts clientspecified")
+		fmt.Println()
+		fmt.Println("This allows oneshell to listen on public interfaces on the remote machine.")
+		fmt.Println("If you know what you're doing and want to continue anyway, bypass this sanity check with --bypass-ssh-sanity-check")
+		fmt.Println()
+
+		return fmt.Errorf("failed to connect to ssh server: %v", err)
+	}
+
+	err = c.Close()
+	if err != nil {
+		return fmt.Errorf("error closing temporary connection: %v", err)
+	}
+
+	return nil
+}
+
+func askInsecureContinue() bool {
+	fmt.Print("Do you want to continue anyway (insecure)? (Y/n): ")
+	reader := bufio.NewReader(os.Stdin)
+	resp, err := reader.ReadString('\n')
+	if err != nil {
+		return false
+	}
+	resp = strings.ToLower(strings.TrimSpace(resp))
+
+	if resp == "y" || resp == "yes" {
+		log.Println("Continuing insecurely.")
+		return true
+	}
+
+	return false
+}
+
+func hostKeyCallback(homeDir string) (ssh.HostKeyCallback, error) {
+	hostKeyCallback, err := knownhosts.New(path.Join(homeDir, ".ssh", "known_hosts"))
+	if err != nil {
+		log.Printf("Failed to parse SSH known hosts file: %v", err)
+		fmt.Println()
+		fmt.Println("Oneshell failed to parse your ~/.ssh/known_hosts file. This means that it is not possible to validate the public key of the SSH server.")
+
+		if askInsecureContinue() {
+			return ssh.InsecureIgnoreHostKey(), nil
+		}
+
+		return nil, err
+	}
+	return (func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		checkRes := hostKeyCallback(hostname, remote, key)
+
+		if checkRes == nil {
+			return nil
+		}
+
+		log.Printf("Failed to verify authenticity of the remote server: %v", checkRes)
+		fmt.Println()
+		fmt.Println("The hostkey validation of the remote server failed. This could mean you haven't connected to the host yet, or that you could be getting man in the middled.")
+		fmt.Println("It is recommended to stop here and fix your ~/.ssh/known_hosts file using normal SSH tools, but you can also choose to continue anyway.")
+
+		if askInsecureContinue() {
+			return nil
+		}
+
+		return checkRes
+	}), nil
 }
 
 func ConnectToSSHHost(host string, listenAddress string, testPort uint16, bypassSanityCheck bool) (*ssh.Client, error) {
@@ -131,12 +224,17 @@ func ConnectToSSHHost(host string, listenAddress string, testPort uint16, bypass
 		return nil, fmt.Errorf("failed to parse private key: %v", err)
 	}
 
+	hkc, err := hostKeyCallback(homeDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse host key: %v", err)
+	}
+
 	sshConfig := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hkc,
 	}
 
 	client, err := ssh.Dial("tcp", hostname+":"+port, sshConfig)
@@ -152,43 +250,4 @@ func ConnectToSSHHost(host string, listenAddress string, testPort uint16, bypass
 	}
 
 	return client, nil
-}
-
-func testListenAllInterfaces(client *ssh.Client, hostname string, listenAddress string, testPort uint16) error {
-	log.Println("Testing connection to SSH server to ensure SSH port forward works...")
-
-	l, err := client.Listen("tcp", fmt.Sprintf("%v:%v", listenAddress, testPort))
-	if err != nil {
-		return fmt.Errorf("failed to start test listener: %v", err)
-	}
-
-	defer l.Close()
-
-	go func() {
-		c, err := l.Accept()
-		if err == nil {
-			c.Close()
-		}
-	}()
-
-	c, err := net.Dial("tcp", fmt.Sprintf("%v:%v", hostname, testPort))
-	if err != nil {
-		fmt.Println()
-		fmt.Println("During a test connection to the SSH instance, it was found that the desired port was unreachable. This could mean that sshd does not allow listening on all interfaces. To fix this, add the following line to /etc/ssh/sshd_config on the remote:")
-		fmt.Println()
-		fmt.Println("GatewayPorts clientspecified")
-		fmt.Println()
-		fmt.Println("This allows oneshell to listen on public interfaces on the remote machine.")
-		fmt.Println("If you know what you're doing and want to continue anyway, bypass this sanity check with --bypass-ssh-sanity-check")
-		fmt.Println()
-
-		return fmt.Errorf("failed to connect to ssh server: %v", err)
-	}
-
-	err = c.Close()
-	if err != nil {
-		return fmt.Errorf("error closing temporary connection: %v", err)
-	}
-
-	return nil
 }
