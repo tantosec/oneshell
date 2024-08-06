@@ -2,17 +2,11 @@
 
 ![image](https://github.com/user-attachments/assets/4a390578-47cb-423a-87ca-ad681a46731c)
 
+# Blog
+
+For a detailed explanation of how the tool works, check out my blog on the topic [here](https://tantosec.com/blog/oneshell/).
+
 # Installation
-
-**Docker**
-
-Replace `oneshell` commands with the following:
-
-```bash
-docker run --rm -it -p 9001:9001 tantosec/oneshell
-```
-
-> Remember to update the value of the `-p` option to the port you are using.
 
 **Local install**
 
@@ -23,6 +17,16 @@ go install github.com/tantosec/oneshell@latest
 **Prebuilt binary**
 
 Download a binary from [the releases page.](https://github.com/tantosec/oneshell/releases)
+
+**Docker**
+
+Replace `oneshell` commands with the following:
+
+```bash
+docker run --rm -it -p 9001:9001 tantosec/oneshell
+```
+
+> Remember to update the value of the `-p` option to the port you are using.
 
 # Basic Usage
 
@@ -66,8 +70,6 @@ However, being a security professional, you want your connection to be encrypted
 It turns out that there are a few ways to do this, mostly involving the `openssl` or `ncat` tools. What if you don't have these tools on the target? One solution is to download them over the internet using `curl` or `wget`. But what if the target doesn't have these binaries either? The base `ubuntu` Docker image doesn't.
 
 "One Shell To Rule Them All", or `oneshell` for short, is a tool that can solve this problem. It does this by running an encrypted reverse shell using only the `echo` and `chmod` commands.
-
-To find out how it works, check out my blog on the topic [here](https://tantosec.com/blog/oneshell/).
 
 # Detailed requirements for a successful payload
 
