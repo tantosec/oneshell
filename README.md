@@ -8,16 +8,6 @@ For a detailed explanation of how the tool works, check out my blog on the topic
 
 # Installation
 
-**Docker**
-
-Replace `oneshell` commands with the following:
-
-```bash
-docker run --rm -it -p 9001:9001 tantosec/oneshell
-```
-
-> Remember to update the value of the `-p` option to the port you are using.
-
 **Local install**
 
 ```bash
@@ -27,6 +17,16 @@ go install github.com/tantosec/oneshell@latest
 **Prebuilt binary**
 
 Download a binary from [the releases page.](https://github.com/tantosec/oneshell/releases)
+
+**Docker**
+
+Replace `oneshell` commands with the following:
+
+```bash
+docker run --rm -it -p 9001:9001 tantosec/oneshell
+```
+
+> Remember to update the value of the `-p` option to the port you are using.
 
 # Basic Usage
 
